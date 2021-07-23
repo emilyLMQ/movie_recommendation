@@ -38,11 +38,35 @@ tmp1 = sum(ratings_df.groupBy("movieId").count().toPandas()['count'] == 1)
 tmp2 = ratings_df.select('movieId').distinct().count()
 print('{} out of {} movies are rated by only one user'.format(tmp1, tmp2))
 
+movies_df.registerTempTable("movies")
+ratings_df.registerTempTable("ratings")
+links_df.registerTempTable("links")
+tags_df.registerTempTable("tags")
+
+
+
+# explore some basic data feature with SQL script
+%sql 
+SELECT COUNT(DISTINCT userID) AS Number_of_users
+FROM ratings
+
+%sql 
+SELECT COUNT(DISTINCT movieID) AS Number_of_movies
+FROM movies
+
+%sql 
+SELECT a.movieID, a.title, a.genres
+FROM movies a 
+inner JOIN ratings b
+ON a.movieID = b.movieID
+
+%sql 
+SELECT COUNT(DISTINCT movieID) AS NUMBER_OF_RATED_MOVIES
+FROM ratings
+
 
 ratings_df.show()
 movie_ratings=ratings_df.drop('timestamp')
-
-
 # Data type convert
 from pyspark.sql.types import IntegerType, FloatType
 movie_ratings = movie_ratings.withColumn("userId", movie_ratings["userId"].cast(IntegerType()))
@@ -51,16 +75,16 @@ movie_ratings = movie_ratings.withColumn("rating", movie_ratings["rating"].cast(
 
 movie_ratings.show()
 
-# ALS model and evaluation
+# Part 2: ALS model and evaluation
 # import package
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.tuning import CrossValidator,ParamGridBuilder
 
-#Create test and train set
+# Create test and train set
 (training,test)=movie_ratings.randomSplit([0.8,0.2])
 
-#Create ALS model
+# Create ALS model
 als = ALS(
          userCol="userId", 
          itemCol="movieId",
@@ -70,7 +94,7 @@ als = ALS(
          coldStartStrategy="drop"
 )
 
-#Tune model using ParamGridBuilder
+# Tune model using ParamGridBuilder
 from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
 from pyspark.ml.evaluation import RegressionEvaluator
  
@@ -94,19 +118,19 @@ print ("Num models to be tested: ", len(param_grid))
 # Build Cross validation 
 cv = CrossValidator(estimator=als, estimatorParamMaps=param_grid, evaluator=evaluator, numFolds=5)
 
-#Fit ALS model to training data
+# Fit ALS model to training data
 model = cv.fit(training)
 
-#Extract best model from the tuning exercise using ParamGridBuilder
+# Extract best model from the tuning exercise using ParamGridBuilder
 best_model = model.bestModel
 
 
-#Generate predictions and evaluate using RMSE
+# Generate predictions and evaluate using RMSE
 predictions=best_model.transform(test)
 rmse = evaluator.evaluate(predictions)
 
 
-#Print evaluation metrics and model parameters
+# Print evaluation metrics and model parameters
 print ("RMSE = "+str(rmse))
 print ("**Best Model**")
 # Print "Rank"
@@ -118,7 +142,7 @@ print("  RegParam:", best_model._java_obj.parent().getRegParam())
 
 predictions.show()
 
-# model application and performance evaluation
+# Part 3: model application and performance evaluation
 alldata=best_model.transform(movie_ratings)
 rmse = evaluator.evaluate(alldata)
 print ("RMSE = "+str(rmse))
@@ -141,4 +165,4 @@ movieRecs.show()
 %sql
 SELECT movieID, recommendations
 FROM movieRecs
-WHERE movieID in (463, 471)
+WHERE movieID in (471)

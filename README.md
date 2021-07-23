@@ -1,8 +1,13 @@
 # movie_recommendation
-This project aims to provide recommendations on movies to users based on the scores of their rated movies.
+In this notebook, we will use an Alternating Least Squares (ALS) algorithm with Spark APIs to predict the ratings for the movies in MovieLens small dataset
 
+ML model used: Alternate least square (ALS)
 
-i dont get this
+Python package used: 
+- pandas
+- numpy
+- seaborn
+- matplotlib
 
-what about this time?
-
+# MovieLens dataset from:
+https://grouplens.org/datasets/movielens/latest/
