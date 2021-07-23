@@ -128,3 +128,17 @@ recommendations = best_model.recommendForAllUsers(5)
 recommendations.registerTempTable("recommendations")
 recommendations.show()
 
+%sql
+SELECT userID, recommendations
+FROM recommendations
+WHERE userID IN (575, 232)
+
+# find similar movies for movie with id: 471
+movieRecs = best_model.recommendForAllItems(10)
+movieRecs.registerTempTable("movieRecs")
+movieRecs.show()
+
+%sql
+SELECT movieID, recommendations
+FROM movieRecs
+WHERE movieID in (463, 471)
